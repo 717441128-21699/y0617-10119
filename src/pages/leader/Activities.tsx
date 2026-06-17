@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus, CalendarDays, MapPin, TrendingUp, Clock, CheckCircle, MoreHorizontal, Eye, Pencil, Send, RotateCcw, RefreshCw } from 'lucide-react';
+import { Plus, CalendarDays, MapPin, TrendingUp, Clock, CheckCircle, MoreHorizontal, Eye, Pencil, Send, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useStore } from '@/store';
 import type { ActivityStatus } from '@/types';
 
@@ -13,7 +13,6 @@ export default function LeaderActivities() {
   const publishActivity = useStore((s) => s.publishActivity);
   const endActivity = useStore((s) => s.endActivity);
   const updateActivity = useStore((s) => s.updateActivity);
-  const resubmitActivity = useStore((s) => s.resubmitActivity);
 
   const myClub = clubs.find((c) => c.leaderId === currentUser?.id);
   const myActivities = myClub ? activities.filter((a) => a.clubId === myClub.id) : [];
@@ -128,10 +127,15 @@ export default function LeaderActivities() {
                     </>
                   )}
                   {a.status === 'rejected' && (
-                    <>
-                      <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Pencil className="w-4 h-4" /> 编辑</button>
-                      <button onClick={() => resubmitActivity(a.id)} className="btn-primary !px-3 !py-1.5 text-xs"><RefreshCw className="w-4 h-4" /> 重新提交</button>
-                    </>
+                    <div className="w-full">
+                      <div className="flex items-center gap-1.5 mb-2 px-3 py-2 bg-red-50 rounded-lg border border-red-100">
+                        <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span className="text-xs text-red-600">已驳回的活动必须先修改再提交</span>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-primary !px-3 !py-1.5 text-xs"><Pencil className="w-4 h-4" /> 编辑</button>
+                      </div>
+                    </div>
                   )}
                   {a.status === 'ended' && (
                     <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>

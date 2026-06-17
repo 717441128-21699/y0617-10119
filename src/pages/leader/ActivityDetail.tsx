@@ -20,7 +20,6 @@ import {
   RotateCcw,
   XCircle,
   AlertTriangle,
-  MessageSquare,
   Plus,
   Trash2,
   Save,
@@ -456,13 +455,24 @@ export default function ActivityDetail() {
                 </div>
                 <div><span className="text-xs text-gray-500">场地名称</span><p className="font-medium text-gray-900">{activity.venueApplication.venue || '未填写'}</p></div>
                 <div><span className="text-xs text-gray-500">使用时段</span><p className="font-medium text-gray-900">{activity.venueApplication.timeSlot || '未填写'}</p></div>
-                {activity.venueApplication.status === 'rejected' && activity.venueApplication.rejectReason && (
+                {activity.venueApplication.status === 'approved' && activity.venueApplication.reviewComment && (
+                  <div className="p-3 bg-emerald-50 rounded-xl text-sm text-emerald-700 border border-emerald-100">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium mb-1">审批意见</p>
+                        <p>{activity.venueApplication.reviewComment}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {activity.venueApplication.status === 'rejected' && activity.venueApplication.reviewComment && (
                   <div className="p-3 bg-rose-50 rounded-xl text-sm text-rose-700 border border-rose-100">
                     <div className="flex items-start gap-2">
-                      <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium mb-1">驳回原因</p>
-                        <p>{activity.venueApplication.rejectReason}</p>
+                        <p>{activity.venueApplication.reviewComment}</p>
                       </div>
                     </div>
                   </div>
@@ -504,13 +514,24 @@ export default function ActivityDetail() {
                     ))}
                   </div>
                 )}
-                {activity.budgetApplication.status === 'rejected' && activity.budgetApplication.rejectReason && (
+                {activity.budgetApplication.status === 'approved' && activity.budgetApplication.reviewComment && (
+                  <div className="p-3 bg-emerald-50 rounded-xl text-sm text-emerald-700 border border-emerald-100">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium mb-1">审批意见</p>
+                        <p>{activity.budgetApplication.reviewComment}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {activity.budgetApplication.status === 'rejected' && activity.budgetApplication.reviewComment && (
                   <div className="p-3 bg-rose-50 rounded-xl text-sm text-rose-700 border border-rose-100">
                     <div className="flex items-start gap-2">
-                      <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium mb-1">驳回原因</p>
-                        <p>{activity.budgetApplication.rejectReason}</p>
+                        <p>{activity.budgetApplication.reviewComment}</p>
                       </div>
                     </div>
                   </div>

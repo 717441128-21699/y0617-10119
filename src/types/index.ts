@@ -69,12 +69,14 @@ export interface Activity {
     timeSlot: string;
     status: 'pending' | 'approved' | 'rejected';
     rejectReason?: string;
+    reviewComment?: string;
   };
   budgetApplication: {
     total: number;
     items: { name: string; amount: number; remark?: string }[];
     status: 'pending' | 'approved' | 'rejected';
     rejectReason?: string;
+    reviewComment?: string;
   };
   capacity: number;
   registeredCount: number;
@@ -111,6 +113,7 @@ export type FinanceCategory =
   | '餐饮费'
   | '奖品费'
   | '宣传费'
+  | '活动预算'
   | '其他';
 
 export interface FinanceRecord {

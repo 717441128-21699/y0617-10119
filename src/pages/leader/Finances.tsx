@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Clock, Plus, FileText, X, CalendarDays, Tag, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Clock, Plus, FileText, X, CalendarDays, Tag, AlertCircle, CheckCircle, Download, Target, PieChart, TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon } from 'lucide-react';
 import { useStore } from '@/store';
-import type { FinanceType, FinanceCategory } from '@/types';
+import type { FinanceType, FinanceCategory, Activity } from '@/types';
 
 const incomeCategories: FinanceCategory[] = ['会费收入', '赞助收入', '学校拨款', '其他'];
-const expenseCategories: FinanceCategory[] = ['场地费', '物料费', '餐饮费', '奖品费', '宣传费', '其他'];
+const expenseCategories: FinanceCategory[] = ['场地费', '物料费', '餐饮费', '奖品费', '宣传费', '活动预算', '其他'];
 
 export default function LeaderFinances() {
   const currentUser = useStore((s) => s.currentUser);
@@ -20,6 +20,11 @@ export default function LeaderFinances() {
   );
   const myActivities = myClub ? activities.filter((a) => a.clubId === myClub.id) : [];
 
+  const availableActivities = useMemo(
+    () => myActivities.filter((a) => ['approved', 'published', 'ended'].includes(a.status)),
+    [myActivities]
+  );
+
   const [showModal, setShowModal] = useState(false);
   const [type, setType] = useState<FinanceType>('expense');
   const [category, setCategory] = useState<FinanceCategory>('其他');
@@ -27,6 +32,11 @@ export default function LeaderFinances() {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [activityId, setActivityId] = useState('');
+
+  const selectedActivity = useMemo(
+    () => availableActivities.find((a) => a.id === activityId),
+    [availableActivities, activityId]
+  );
 
   const totalIncome = useMemo(
     () => myFinances.filter((f) => f.type === 'income' && f.reviewStatus === 'approved').reduce((s, f) => s + f.amount, 0),
@@ -39,6 +49,37 @@ export default function LeaderFinances() {
   const pendingCount = useMemo(() => myFinances.filter((f) => f.reviewStatus === 'pending').length, [myFinances]);
   const balance = totalIncome - totalExpense;
 
+  const budgetOccupied = useMemo(
+    () => myFinances.filter((f) => f.category === '活动预算' && f.reviewStatus === 'approved').reduce((s, f) => s + f.amount, 0),
+    [myFinances]
+  );
+
+  const budgetComparison = useMemo(() => {
+    const map = new Map<string, { activity: Activity; budget: number; actualSpent: number }>();
+    const budgetRecords = myFinances.filter((f) => f.category === '活动预算' && f.activityId);
+    budgetRecords.forEach((f) => {
+      const activity = activities.find((a) => a.id === f.activityId);
+      if (activity) {
+        map.set(f.activityId!, {
+          activity,
+          budget: f.amount,
+          actualSpent: 0,
+        });
+      }
+    });
+    myFinances.forEach((f) => {
+      if (f.category !== '活动预算' && f.activityId && map.has(f.activityId) && f.reviewStatus === 'approved') {
+        const entry = map.get(f.activityId)!;
+        if (f.type === 'expense') {
+          entry.actualSpent += f.amount;
+        } else {
+          entry.actualSpent -= f.amount;
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [myFinances, activities]);
+
   const categoryStats = useMemo(() => {
     const stats: Record<string, { income: number; expense: number }> = {};
     myFinances.forEach((f) => {
@@ -49,6 +90,12 @@ export default function LeaderFinances() {
     });
     return stats;
   }, [myFinances]);
+
+  const getActivityTitle = (actId?: string) => {
+    if (!actId) return '-';
+    const activity = activities.find((a) => a.id === actId);
+    return activity ? activity.title : '-';
+  };
 
   const resetForm = () => {
     setType('expense');
@@ -82,6 +129,14 @@ export default function LeaderFinances() {
       `总收入：¥${totalIncome.toLocaleString()}`,
       `总支出：¥${totalExpense.toLocaleString()}`,
       `当前余额：¥${balance.toLocaleString()}`,
+      `预算占用：¥${budgetOccupied.toLocaleString()}`,
+      '',
+      '预算对比：',
+      ...budgetComparison.map((b) => {
+        const diff = b.budget - b.actualSpent;
+        const diffStr = diff >= 0 ? `节省 ¥${diff.toLocaleString()}` : `超支 ¥${Math.abs(diff).toLocaleString()}`;
+        return `  ${b.activity.title}：预算 ¥${b.budget.toLocaleString()} / 实际 ¥${b.actualSpent.toLocaleString()} / ${diffStr}`;
+      }),
       '',
       '分类明细：',
       ...Object.entries(categoryStats).map(([cat, s]) => {
@@ -92,7 +147,7 @@ export default function LeaderFinances() {
       }),
       '',
       '收支记录：',
-      ...myFinances.map((f) => `  [${f.date}] ${f.type === 'income' ? '+' : '-'}¥${f.amount} ${f.category} - ${f.description} (${f.reviewStatus === 'approved' ? '已通过' : f.reviewStatus === 'pending' ? '待审核' : '已驳回'})`),
+      ...myFinances.map((f) => `  [${f.date}] ${f.type === 'income' ? '+' : '-'}¥${f.amount} ${f.category} - ${f.description} (${f.reviewStatus === 'approved' ? '已通过' : f.reviewStatus === 'pending' ? '待审核' : '已驳回'}) ${f.activityId ? `[活动: ${getActivityTitle(f.activityId)}]` : ''}`),
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -135,7 +190,7 @@ export default function LeaderFinances() {
         <div className="stat-card bg-gradient-to-br from-brand-600 to-brand-800 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-brand-100">当前余额</p>
+              <p className="text-sm text-brand-100">当前结余</p>
               <p className="text-3xl font-bold mt-1">¥{balance.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -146,15 +201,68 @@ export default function LeaderFinances() {
         <div className="stat-card bg-gradient-to-br from-accent-500 to-accent-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-accent-100">待审核</p>
-              <p className="text-3xl font-bold mt-1">{pendingCount}</p>
+              <p className="text-sm text-accent-100">预算占用</p>
+              <p className="text-3xl font-bold mt-1">¥{budgetOccupied.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6" />
+              <Target className="w-6 h-6" />
             </div>
           </div>
         </div>
       </div>
+
+      {budgetComparison.length > 0 && (
+        <div className="card p-6">
+          <h3 className="section-title !mb-4">
+            <PieChart className="w-5 h-5 text-brand-600" /> 预算 vs 实际
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {budgetComparison.map((b) => {
+              const diff = b.budget - b.actualSpent;
+              const isOverBudget = diff < 0;
+              const usagePercent = b.budget > 0 ? Math.min(100, (b.actualSpent / b.budget) * 100) : 0;
+              return (
+                <div key={b.activity.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-800 truncate flex-1 mr-2">{b.activity.title}</h4>
+                    <span className={`text-sm font-bold ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      {isOverBudget ? '超支' : '节省'}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-gray-600">
+                      <span>预算金额</span>
+                      <span className="font-medium text-gray-800">¥{b.budget.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>实际花费</span>
+                      <span className="font-medium text-gray-800">¥{b.actualSpent.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">差额</span>
+                      <span className={`font-bold ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {isOverBudget ? '-' : '+'}¥{Math.abs(diff).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="pt-2">
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>预算使用率</span>
+                        <span>{usagePercent.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-rose-500' : usagePercent > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${usagePercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <h2 className="section-title !mb-0">
@@ -173,6 +281,7 @@ export default function LeaderFinances() {
                 <th className="table-header">日期</th>
                 <th className="table-header">类型</th>
                 <th className="table-header">分类</th>
+                <th className="table-header">关联活动</th>
                 <th className="table-header">金额</th>
                 <th className="table-header">说明</th>
                 <th className="table-header">审核状态</th>
@@ -181,7 +290,7 @@ export default function LeaderFinances() {
             <tbody className="divide-y divide-gray-50">
               {myFinances.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                     <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
                     <p>暂无收支记录</p>
                   </td>
@@ -195,7 +304,21 @@ export default function LeaderFinances() {
                         {f.type === 'income' ? '收入' : '支出'}
                       </span>
                     </td>
-                    <td className="table-cell text-gray-700">{f.category}</td>
+                    <td className="table-cell">
+                      <span className={f.category === '活动预算' ? 'text-accent-600 font-medium' : 'text-gray-700'}>
+                        {f.category}
+                      </span>
+                    </td>
+                    <td className="table-cell text-gray-600">
+                      {f.activityId ? (
+                        <span className="inline-flex items-center gap-1 text-brand-600">
+                          <CalendarDays className="w-3.5 h-3.5" />
+                          {getActivityTitle(f.activityId)}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                     <td className={`table-cell font-bold ${f.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {f.type === 'income' ? '+' : '-'}¥{f.amount.toLocaleString()}
                     </td>
@@ -225,7 +348,7 @@ export default function LeaderFinances() {
             <Download className="w-4 h-4" /> 生成报表
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="p-4 rounded-xl bg-emerald-50">
             <p className="text-xs text-emerald-600 font-medium">总收入汇总</p>
             <p className="text-2xl font-bold text-emerald-700 mt-1">¥{totalIncome.toLocaleString()}</p>
@@ -238,6 +361,10 @@ export default function LeaderFinances() {
             <p className="text-xs text-brand-600 font-medium">结余</p>
             <p className="text-2xl font-bold text-brand-700 mt-1">¥{balance.toLocaleString()}</p>
           </div>
+          <div className="p-4 rounded-xl bg-accent-50">
+            <p className="text-xs text-accent-600 font-medium">预算占用</p>
+            <p className="text-2xl font-bold text-accent-700 mt-1">¥{budgetOccupied.toLocaleString()}</p>
+          </div>
         </div>
         <div>
           <h4 className="text-sm font-semibold text-gray-700 mb-3">分类统计</h4>
@@ -248,8 +375,8 @@ export default function LeaderFinances() {
               Object.entries(categoryStats).map(([cat, s]) => (
                 <div key={cat} className="flex items-center justify-between py-3 px-4 rounded-xl bg-gray-50">
                   <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700">{cat}</span>
+                    <Tag className={`w-4 h-4 ${cat === '活动预算' ? 'text-accent-500' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium ${cat === '活动预算' ? 'text-accent-700' : 'text-gray-700'}`}>{cat}</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     {s.income > 0 && (
@@ -292,7 +419,7 @@ export default function LeaderFinances() {
                       type === 'income' ? 'bg-emerald-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <TrendingUp className="w-4 h-4 inline mr-1" /> 收入
+                    <TrendingUpIcon className="w-4 h-4 inline mr-1" /> 收入
                   </button>
                   <button
                     onClick={() => { setType('expense'); setCategory('物料费'); }}
@@ -300,16 +427,37 @@ export default function LeaderFinances() {
                       type === 'expense' ? 'bg-rose-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <TrendingDown className="w-4 h-4 inline mr-1" /> 支出
+                    <TrendingDownIcon className="w-4 h-4 inline mr-1" /> 支出
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label className="label">关联活动</label>
+                <select
+                  value={activityId}
+                  onChange={(e) => setActivityId(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">不关联活动</option>
+                  {availableActivities.map((a) => (
+                    <option key={a.id} value={a.id}>{a.title}</option>
+                  ))}
+                </select>
+                {selectedActivity && (
+                  <div className="mt-2 p-3 rounded-lg bg-brand-50 border border-brand-100">
+                    <p className="text-xs text-brand-600 font-medium">活动预算：¥{selectedActivity.budgetApplication.total.toLocaleString()}</p>
+                  </div>
+                )}
               </div>
 
               <div>
                 <label className="label">分类</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value as FinanceCategory)} className="input-field">
                   {(type === 'income' ? incomeCategories : expenseCategories).map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c} disabled={c === '活动预算'}>
+                      {c}{c === '活动预算' ? '（系统自动生成）' : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -332,16 +480,6 @@ export default function LeaderFinances() {
                   <CalendarDays className="w-4 h-4 inline mr-1" /> 日期
                 </label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
-              </div>
-
-              <div>
-                <label className="label">关联活动（可选）</label>
-                <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className="input-field">
-                  <option value="">不关联活动</option>
-                  {myActivities.map((a) => (
-                    <option key={a.id} value={a.id}>{a.title}</option>
-                  ))}
-                </select>
               </div>
 
               <div>

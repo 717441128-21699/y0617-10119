@@ -198,6 +198,8 @@ export const useStore = create<AppState>()(
       },
 
       approveActivity: (activityId) => {
+        const activity = get().activities.find((a) => a.id === activityId);
+        if (!activity) return;
         set({
           activities: get().activities.map((a) =>
             a.id === activityId
@@ -210,9 +212,29 @@ export const useStore = create<AppState>()(
               : a
           ),
         });
+        // 自动生成预算占用财务记录（待审核）
+        const existingBudgetRecord = get().finances.find(
+          (f) => f.activityId === activityId && f.category === '活动预算'
+        );
+        if (!existingBudgetRecord) {
+          const newRecord: FinanceRecord = {
+            id: genId('f'),
+            clubId: activity.clubId,
+            activityId,
+            type: 'expense',
+            category: '活动预算',
+            amount: activity.budgetApplication.total,
+            description: `${activity.title} - 活动预算占用`,
+            date: new Date().toISOString().slice(0, 10),
+            reviewStatus: 'pending',
+          };
+          set({ finances: [...get().finances, newRecord] });
+        }
       },
 
       reviewActivity: (activityId, venueResult, venueReason, budgetResult, budgetReason) => {
+        const activity = get().activities.find((a) => a.id === activityId);
+        if (!activity) return;
         const bothApproved = venueResult === 'approved' && budgetResult === 'approved';
         const anyRejected = venueResult === 'rejected' || budgetResult === 'rejected';
         let overallStatus: Activity['status'] = 'pending';
@@ -229,16 +251,39 @@ export const useStore = create<AppState>()(
                     ...a.venueApplication,
                     status: venueResult,
                     rejectReason: venueResult === 'rejected' ? venueReason : undefined,
+                    reviewComment: venueReason || undefined,
                   },
                   budgetApplication: {
                     ...a.budgetApplication,
                     status: budgetResult,
                     rejectReason: budgetResult === 'rejected' ? budgetReason : undefined,
+                    reviewComment: budgetReason || undefined,
                   },
                 }
               : a
           ),
         });
+
+        // 全部通过时自动生成预算占用财务记录
+        if (bothApproved) {
+          const existingBudgetRecord = get().finances.find(
+            (f) => f.activityId === activityId && f.category === '活动预算'
+          );
+          if (!existingBudgetRecord) {
+            const newRecord: FinanceRecord = {
+              id: genId('f'),
+              clubId: activity.clubId,
+              activityId,
+              type: 'expense',
+              category: '活动预算',
+              amount: activity.budgetApplication.total,
+              description: `${activity.title} - 活动预算占用`,
+              date: new Date().toISOString().slice(0, 10),
+              reviewStatus: 'pending',
+            };
+            set({ finances: [...get().finances, newRecord] });
+          }
+        }
       },
 
       resubmitActivity: (activityId) => {
@@ -248,8 +293,8 @@ export const useStore = create<AppState>()(
               ? {
                   ...a,
                   status: 'pending',
-                  venueApplication: { ...a.venueApplication, status: 'pending', rejectReason: undefined },
-                  budgetApplication: { ...a.budgetApplication, status: 'pending', rejectReason: undefined },
+                  venueApplication: { ...a.venueApplication, status: 'pending', rejectReason: undefined, reviewComment: undefined },
+                  budgetApplication: { ...a.budgetApplication, status: 'pending', rejectReason: undefined, reviewComment: undefined },
                 }
               : a
           ),
