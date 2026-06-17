@@ -23,7 +23,7 @@ export default function LeaderActivities() {
   const filtered = filter === 'all' ? myActivities : myActivities.filter((a) => a.status === filter);
 
   const statusLabels: Record<ActivityStatus | 'all', string> = {
-    all: '全部', draft: '草稿', pending: '待审批', approved: '已批准', published: '报名中', ended: '已结束',
+    all: '全部', draft: '草稿', pending: '待审批', approved: '已批准', rejected: '已驳回', published: '报名中', ended: '已结束',
   };
 
   const counts = {
@@ -33,6 +33,7 @@ export default function LeaderActivities() {
     approved: myActivities.filter((a) => a.status === 'approved').length,
     published: myActivities.filter((a) => a.status === 'published').length,
     ended: myActivities.filter((a) => a.status === 'ended').length,
+    rejected: myActivities.filter((a) => a.status === 'rejected').length,
   };
 
   return (

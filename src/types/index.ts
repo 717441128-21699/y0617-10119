@@ -53,7 +53,7 @@ export interface Member {
   department?: string;
 }
 
-export type ActivityStatus = 'draft' | 'pending' | 'approved' | 'published' | 'ended';
+export type ActivityStatus = 'draft' | 'pending' | 'approved' | 'published' | 'ended' | 'rejected';
 
 export interface Activity {
   id: string;

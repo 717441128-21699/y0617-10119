@@ -46,6 +46,8 @@ interface AppState {
   createActivity: (data: Partial<Activity>) => void;
   updateActivity: (activityId: string, data: Partial<Activity>) => void;
   approveActivity: (activityId: string) => void;
+  rejectActivity: (activityId: string, venueReason: string, budgetReason: string) => void;
+  resubmitActivity: (activityId: string) => void;
   publishActivity: (activityId: string) => void;
   endActivity: (activityId: string) => void;
   registerActivity: (activityId: string, studentId: string, name: string) => boolean;
@@ -176,7 +178,7 @@ export const useStore = create<AppState>()(
           budgetApplication: data.budgetApplication || { total: 0, items: [], status: 'pending' },
           capacity: data.capacity || 50,
           registeredCount: 0,
-          status: 'draft',
+          status: data.status || 'draft',
           registrations: [],
           attendances: [],
           createdAt: new Date().toISOString().slice(0, 10),
@@ -198,6 +200,36 @@ export const useStore = create<AppState>()(
                   status: 'approved',
                   venueApplication: { ...a.venueApplication, status: 'approved' },
                   budgetApplication: { ...a.budgetApplication, status: 'approved' },
+                }
+              : a
+          ),
+        });
+      },
+
+      rejectActivity: (activityId, venueReason, budgetReason) => {
+        set({
+          activities: get().activities.map((a) =>
+            a.id === activityId
+              ? {
+                  ...a,
+                  status: 'rejected',
+                  venueApplication: { ...a.venueApplication, status: 'rejected', rejectReason: venueReason },
+                  budgetApplication: { ...a.budgetApplication, status: 'rejected', rejectReason: budgetReason },
+                }
+              : a
+          ),
+        });
+      },
+
+      resubmitActivity: (activityId) => {
+        set({
+          activities: get().activities.map((a) =>
+            a.id === activityId
+              ? {
+                  ...a,
+                  status: 'pending',
+                  venueApplication: { ...a.venueApplication, status: 'pending', rejectReason: undefined },
+                  budgetApplication: { ...a.budgetApplication, status: 'pending', rejectReason: undefined },
                 }
               : a
           ),
