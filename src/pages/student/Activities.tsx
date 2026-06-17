@@ -12,7 +12,6 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { useStore } from '@/store';
-import DashboardLayout from '@/components/DashboardLayout';
 
 export default function StudentActivities() {
   const navigate = useNavigate();
@@ -48,8 +47,7 @@ export default function StudentActivities() {
   };
 
   return (
-    <DashboardLayout role="student">
-      <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
         <div className="card p-8 bg-gradient-to-r from-brand-900 via-brand-800 to-accent-700 text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-grid" />
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent-400 rounded-full blur-3xl opacity-30" />
@@ -234,7 +232,10 @@ export default function StudentActivities() {
                                   <ArrowRight className="w-4 h-4" />
                                 </button>
                               )}
-                              <button className="btn-secondary !py-2.5 text-sm">
+                              <button
+                                onClick={() => navigate(`/activity/${activity.id}`)}
+                                className="btn-secondary !py-2.5 text-sm"
+                              >
                                 查看详情
                               </button>
                             </div>
@@ -255,6 +256,5 @@ export default function StudentActivities() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

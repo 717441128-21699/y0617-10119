@@ -15,6 +15,15 @@ import LeaderDashboard from "@/pages/leader/Dashboard";
 import LeaderClub from "@/pages/leader/Club";
 import LeaderMembers from "@/pages/leader/Members";
 import LeaderActivities from "@/pages/leader/Activities";
+import LeaderActivityDetail from "@/pages/leader/ActivityDetail";
+import LeaderActivityNew from "@/pages/leader/ActivityNew";
+import LeaderFinances from "@/pages/leader/Finances";
+import LeaderReport from "@/pages/leader/Report";
+
+import StudentHome from "@/pages/student/Home";
+import StudentActivities from "@/pages/student/Activities";
+import StudentMyClubs from "@/pages/student/MyClubs";
+import StudentProfile from "@/pages/student/Profile";
 
 export default function App() {
   return (
@@ -117,6 +126,87 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/leader/activities/new"
+          element={
+            <ProtectedRoute allowedRoles={["leader"]}>
+              <DashboardLayout role="leader">
+                <LeaderActivityNew />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/activities/:id"
+          element={
+            <ProtectedRoute allowedRoles={["leader"]}>
+              <DashboardLayout role="leader">
+                <LeaderActivityDetail />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/finances"
+          element={
+            <ProtectedRoute allowedRoles={["leader"]}>
+              <DashboardLayout role="leader">
+                <LeaderFinances />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/report"
+          element={
+            <ProtectedRoute allowedRoles={["leader"]}>
+              <DashboardLayout role="leader">
+                <LeaderReport />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/home"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <DashboardLayout role="student">
+                <StudentHome />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/activities"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <DashboardLayout role="student">
+                <StudentActivities />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/my"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <DashboardLayout role="student">
+                <StudentMyClubs />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/profile"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <DashboardLayout role="student">
+                <StudentProfile />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="*"
@@ -125,6 +215,9 @@ export default function App() {
               <div className="text-center">
                 <h1 className="text-6xl font-serif font-bold text-brand-900 mb-4">404</h1>
                 <p className="text-gray-500 mb-6">页面不存在</p>
+                <button onClick={() => window.history.back()} className="btn-primary">
+                  返回上一页
+                </button>
               </div>
             </div>
           }

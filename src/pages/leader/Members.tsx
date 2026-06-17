@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, UserPlus, Check, X, Users, Phone, Filter, Download, QrCode } from 'lucide-react';
+import { Search, UserPlus, Check, X, Users, Phone, Filter, Download, QrCode, Copy, Check as CheckIcon } from 'lucide-react';
 import { useStore } from '@/store';
 import type { Member, MemberStatus } from '@/types';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function LeaderMembers() {
   const currentUser = useStore((s) => s.currentUser);
@@ -12,8 +13,17 @@ export default function LeaderMembers() {
   const [status, setStatus] = useState<MemberStatus | 'all'>('all');
   const [keyword, setKeyword] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const myClub = clubs.find((c) => c.leaderId === currentUser?.id);
+  const joinLink = window.location.origin + '/club/' + myClub?.id + '?join=true';
+
+  const handleCopyLink = async () => {
+    if (!myClub) return;
+    await navigator.clipboard.writeText(joinLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const myMembers = myClub ? members.filter((m) => m.clubId === myClub.id) : [];
 
   if (!myClub) {
@@ -183,13 +193,29 @@ export default function LeaderMembers() {
           <div className="card w-full max-w-sm p-8 text-center">
             <h3 className="text-lg font-bold text-gray-900 mb-2">社团招新二维码</h3>
             <p className="text-sm text-gray-500 mb-5">让学生扫码加入「{myClub.name}」</p>
-            <div className="w-52 h-52 mx-auto bg-white border-2 border-gray-200 rounded-2xl p-3 flex items-center justify-center">
-              <div className="w-full h-full bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-500">
-                <QrCode className="w-24 h-24 text-brand-600 mb-2" />
-                <p className="text-xs">扫码申请加入</p>
-                <p className="text-xs font-mono mt-1 text-brand-600">club:{myClub.id}</p>
-              </div>
+            <div className="w-52 mx-auto bg-white border-2 border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center">
+              <QRCodeSVG
+                value={joinLink}
+                size={200}
+                fgColor="#1e3a8a"
+              />
             </div>
+            <button
+              onClick={handleCopyLink}
+              className="btn-secondary w-full mt-4 !py-2.5 inline-flex items-center justify-center gap-2"
+            >
+              {copied ? (
+                <>
+                  <CheckIcon className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-600 font-medium">链接已复制</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  复制链接
+                </>
+              )}
+            </button>
             <p className="text-xs text-gray-400 mt-5">学生扫码后需填写学号和联系方式，由您审核后正式加入</p>
             <button onClick={() => setShowQR(false)} className="btn-primary w-full mt-5">
               完成

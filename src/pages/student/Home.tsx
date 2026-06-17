@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Users, Sparkles, ArrowRight, Filter, Building2 } from 'lucide-react';
 import { useStore } from '@/store';
-import DashboardLayout from '@/components/DashboardLayout';
 import type { ClubCategory } from '@/types';
 
 const categories: (ClubCategory | '全部')[] = ['全部', '科技类', '文艺类', '体育类', '学术类', '公益类', '其他'];
@@ -38,8 +37,7 @@ export default function StudentHome() {
   }, [approvedClubs, selectedCategory, searchQuery]);
 
   return (
-    <DashboardLayout role="student">
-      <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
         <div className="card p-8 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-20 bg-grid" />
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-accent-500 rounded-full blur-3xl opacity-30" />
@@ -169,6 +167,5 @@ export default function StudentHome() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

@@ -13,7 +13,6 @@ import {
   LogIn,
 } from 'lucide-react';
 import { useStore } from '@/store';
-import DashboardLayout from '@/components/DashboardLayout';
 
 export default function StudentMyClubs() {
   const navigate = useNavigate();
@@ -81,8 +80,7 @@ export default function StudentMyClubs() {
   }, [activities, currentUser, clubs]);
 
   return (
-    <DashboardLayout role="student">
-      <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
         <div className="card p-8 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-grid" />
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent-400 rounded-full blur-3xl opacity-30" />
@@ -294,6 +292,5 @@ export default function StudentMyClubs() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

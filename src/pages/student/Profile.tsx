@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store';
-import DashboardLayout from '@/components/DashboardLayout';
 
 export default function StudentProfile() {
   const navigate = useNavigate();
@@ -82,8 +81,7 @@ export default function StudentProfile() {
   };
 
   return (
-    <DashboardLayout role="student">
-      <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
         <div className="card overflow-hidden">
           <div className="h-40 bg-gradient-to-br from-brand-900 via-brand-800 to-accent-600 relative">
             <div className="absolute inset-0 opacity-20 bg-grid" />
@@ -311,6 +309,5 @@ export default function StudentProfile() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

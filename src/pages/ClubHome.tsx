@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   Users,
   CalendarDays,
@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 
 export default function ClubHome() {
   const { clubId } = useParams<{ clubId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const clubs = useStore((s) => s.clubs);
   const activities = useStore((s) => s.activities);
@@ -26,6 +27,12 @@ export default function ClubHome() {
   const addMember = useStore((s) => s.addMember);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('join') === 'true' && currentUser) {
+      setShowApplyModal(true);
+    }
+  }, [searchParams, currentUser]);
 
   const club = clubs.find((c) => c.id === clubId);
   const clubActivities = activities
