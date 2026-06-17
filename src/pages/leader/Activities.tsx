@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus, CalendarDays, MapPin, TrendingUp, Clock, CheckCircle, MoreHorizontal, Eye, Filter } from 'lucide-react';
+import { Plus, CalendarDays, MapPin, TrendingUp, Clock, CheckCircle, MoreHorizontal, Eye, Pencil, Send, RotateCcw, RefreshCw } from 'lucide-react';
 import { useStore } from '@/store';
 import type { ActivityStatus } from '@/types';
 
@@ -12,6 +12,8 @@ export default function LeaderActivities() {
   const [filter, setFilter] = useState<ActivityStatus | 'all'>('all');
   const publishActivity = useStore((s) => s.publishActivity);
   const endActivity = useStore((s) => s.endActivity);
+  const updateActivity = useStore((s) => s.updateActivity);
+  const resubmitActivity = useStore((s) => s.resubmitActivity);
 
   const myClub = clubs.find((c) => c.leaderId === currentUser?.id);
   const myActivities = myClub ? activities.filter((a) => a.clubId === myClub.id) : [];
@@ -23,8 +25,10 @@ export default function LeaderActivities() {
   const filtered = filter === 'all' ? myActivities : myActivities.filter((a) => a.status === filter);
 
   const statusLabels: Record<ActivityStatus | 'all', string> = {
-    all: '全部', draft: '草稿', pending: '待审批', approved: '已批准', rejected: '已驳回', published: '报名中', ended: '已结束',
+    all: '全部', draft: '草稿', pending: '待审批', approved: '已批准', published: '报名中', rejected: '已驳回', ended: '已结束',
   };
+
+  const tabOrder: (ActivityStatus | 'all')[] = ['all', 'draft', 'pending', 'approved', 'published', 'rejected', 'ended'];
 
   const counts = {
     all: myActivities.length,
@@ -32,15 +36,15 @@ export default function LeaderActivities() {
     pending: myActivities.filter((a) => a.status === 'pending').length,
     approved: myActivities.filter((a) => a.status === 'approved').length,
     published: myActivities.filter((a) => a.status === 'published').length,
-    ended: myActivities.filter((a) => a.status === 'ended').length,
     rejected: myActivities.filter((a) => a.status === 'rejected').length,
+    ended: myActivities.filter((a) => a.status === 'ended').length,
   };
 
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-wrap">
-          {(Object.keys(statusLabels) as (ActivityStatus | 'all')[]).map((s) => (
+          {tabOrder.map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -76,7 +80,8 @@ export default function LeaderActivities() {
                 </div>
                 <span className={`badge flex-shrink-0 ${
                   a.status === 'published' ? 'badge-published' : a.status === 'approved' ? 'badge-approved' :
-                  a.status === 'pending' ? 'badge-pending' : a.status === 'ended' ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-500'
+                  a.status === 'pending' ? 'badge-pending' : a.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  a.status === 'ended' ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {statusLabels[a.status]}
                 </span>
@@ -98,9 +103,39 @@ export default function LeaderActivities() {
                   <span className={`flex items-center gap-1 ${a.venueApplication.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}`}><Clock className="w-3.5 h-3.5" /> 场地{a.venueApplication.status === 'approved' ? '已批' : '待批'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 管理</button>
-                  {a.status === 'approved' && <button onClick={() => publishActivity(a.id)} className="btn-success !px-3 !py-1.5 text-xs"><CheckCircle className="w-4 h-4" /> 发布</button>}
-                  {a.status === 'published' && <button onClick={() => endActivity(a.id)} className="btn-secondary !px-3 !py-1.5 text-xs"><MoreHorizontal className="w-4 h-4" /> 结束</button>}
+                  {a.status === 'draft' && (
+                    <>
+                      <button onClick={() => navigate('/leader/activities/new')} className="btn-ghost !px-3 !py-1.5 text-xs"><Pencil className="w-4 h-4" /> 编辑</button>
+                      <button onClick={() => updateActivity(a.id, { status: 'pending' })} className="btn-primary !px-3 !py-1.5 text-xs"><Send className="w-4 h-4" /> 提交审批</button>
+                    </>
+                  )}
+                  {a.status === 'pending' && (
+                    <>
+                      <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>
+                      <button onClick={() => updateActivity(a.id, { status: 'draft' })} className="btn-secondary !px-3 !py-1.5 text-xs"><RotateCcw className="w-4 h-4" /> 撤回</button>
+                    </>
+                  )}
+                  {a.status === 'approved' && (
+                    <>
+                      <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>
+                      <button onClick={() => publishActivity(a.id)} className="btn-success !px-3 !py-1.5 text-xs"><CheckCircle className="w-4 h-4" /> 发布活动</button>
+                    </>
+                  )}
+                  {a.status === 'published' && (
+                    <>
+                      <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>
+                      <button onClick={() => endActivity(a.id)} className="btn-secondary !px-3 !py-1.5 text-xs"><MoreHorizontal className="w-4 h-4" /> 结束活动</button>
+                    </>
+                  )}
+                  {a.status === 'rejected' && (
+                    <>
+                      <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Pencil className="w-4 h-4" /> 编辑</button>
+                      <button onClick={() => resubmitActivity(a.id)} className="btn-primary !px-3 !py-1.5 text-xs"><RefreshCw className="w-4 h-4" /> 重新提交</button>
+                    </>
+                  )}
+                  {a.status === 'ended' && (
+                    <button onClick={() => navigate(`/leader/activities/${a.id}`)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>
+                  )}
                 </div>
               </div>
             </div>

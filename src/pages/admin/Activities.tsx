@@ -6,8 +6,7 @@ import type { Activity, ActivityStatus } from '@/types';
 export default function AdminActivities() {
   const activities = useStore((s) => s.activities);
   const clubs = useStore((s) => s.clubs);
-  const approveActivity = useStore((s) => s.approveActivity);
-  const rejectActivity = useStore((s) => s.rejectActivity);
+  const reviewActivity = useStore((s) => s.reviewActivity);
   const [status, setStatus] = useState<ActivityStatus | 'all'>('all');
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<Activity | null>(null);
@@ -16,7 +15,9 @@ export default function AdminActivities() {
   const [venueReason, setVenueReason] = useState('');
   const [budgetReason, setBudgetReason] = useState('');
 
-  const filtered = activities.filter((a) => {
+  const nonDraftActivities = activities.filter((a) => a.status !== 'draft');
+
+  const filtered = nonDraftActivities.filter((a) => {
     if (status !== 'all' && a.status !== status) return false;
     if (keyword && !a.title.includes(keyword)) return false;
     return true;
@@ -25,21 +26,25 @@ export default function AdminActivities() {
   const getClubName = (clubId: string) => clubs.find((c) => c.id === clubId)?.name || '-';
 
   const tabs: { key: ActivityStatus | 'all'; label: string; count: number }[] = [
-    { key: 'all', label: '全部', count: activities.length },
-    { key: 'pending', label: '待审批', count: activities.filter((a) => a.status === 'pending').length },
-    { key: 'approved', label: '已批准', count: activities.filter((a) => a.status === 'approved').length },
-    { key: 'rejected', label: '已驳回', count: activities.filter((a) => a.status === 'rejected').length },
-    { key: 'published', label: '已发布', count: activities.filter((a) => a.status === 'published').length },
-    { key: 'ended', label: '已结束', count: activities.filter((a) => a.status === 'ended').length },
+    { key: 'all', label: '全部', count: nonDraftActivities.length },
+    { key: 'pending', label: '待审批', count: nonDraftActivities.filter((a) => a.status === 'pending').length },
+    { key: 'approved', label: '已批准', count: nonDraftActivities.filter((a) => a.status === 'approved').length },
+    { key: 'rejected', label: '已驳回', count: nonDraftActivities.filter((a) => a.status === 'rejected').length },
+    { key: 'published', label: '已发布', count: nonDraftActivities.filter((a) => a.status === 'published').length },
+    { key: 'ended', label: '已结束', count: nonDraftActivities.filter((a) => a.status === 'ended').length },
   ];
 
-  const handleApprove = (id: string) => {
-    approveActivity(id);
-    setSelected(null);
-  };
-
-  const handleReject = (id: string) => {
-    rejectActivity(id, venueReason, budgetReason);
+  const handleReview = () => {
+    if (!selected) return;
+    if (venueApproval === 'rejected' && !venueReason.trim()) {
+      alert('请填写场地审批驳回意见');
+      return;
+    }
+    if (budgetApproval === 'rejected' && !budgetReason.trim()) {
+      alert('请填写经费审批驳回意见');
+      return;
+    }
+    reviewActivity(selected.id, venueApproval, venueReason, budgetApproval, budgetReason);
     setSelected(null);
     setVenueReason('');
     setBudgetReason('');
@@ -173,11 +178,6 @@ export default function AdminActivities() {
                   <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => openDetail(a)} className="btn-ghost !px-3 !py-1.5 text-xs"><Eye className="w-4 h-4" /> 详情</button>
-                      {a.status === 'pending' && (
-                        <>
-                          <button onClick={() => handleApprove(a.id)} className="btn-success !px-3 !py-1.5 text-xs"><Check className="w-4 h-4" /> 通过</button>
-                        </>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -353,11 +353,8 @@ export default function AdminActivities() {
             {selected.status === 'pending' && (
               <div className="p-6 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
                 <button onClick={() => setSelected(null)} className="btn-secondary">稍后处理</button>
-                <button onClick={() => handleReject(selected.id)} className="btn-danger">
-                  <X className="w-4 h-4" /> 驳回
-                </button>
-                <button onClick={() => handleApprove(selected.id)} className="btn-primary">
-                  <Check className="w-4 h-4" /> 通过审批
+                <button onClick={handleReview} className="btn-primary">
+                  <Check className="w-4 h-4" /> 提交审批结果
                 </button>
               </div>
             )}

@@ -46,7 +46,13 @@ interface AppState {
   createActivity: (data: Partial<Activity>) => void;
   updateActivity: (activityId: string, data: Partial<Activity>) => void;
   approveActivity: (activityId: string) => void;
-  rejectActivity: (activityId: string, venueReason: string, budgetReason: string) => void;
+  reviewActivity: (
+    activityId: string,
+    venueResult: 'approved' | 'rejected',
+    venueReason: string,
+    budgetResult: 'approved' | 'rejected',
+    budgetReason: string
+  ) => void;
   resubmitActivity: (activityId: string) => void;
   publishActivity: (activityId: string) => void;
   endActivity: (activityId: string) => void;
@@ -206,15 +212,29 @@ export const useStore = create<AppState>()(
         });
       },
 
-      rejectActivity: (activityId, venueReason, budgetReason) => {
+      reviewActivity: (activityId, venueResult, venueReason, budgetResult, budgetReason) => {
+        const bothApproved = venueResult === 'approved' && budgetResult === 'approved';
+        const anyRejected = venueResult === 'rejected' || budgetResult === 'rejected';
+        let overallStatus: Activity['status'] = 'pending';
+        if (bothApproved) overallStatus = 'approved';
+        else if (anyRejected) overallStatus = 'rejected';
+
         set({
           activities: get().activities.map((a) =>
             a.id === activityId
               ? {
                   ...a,
-                  status: 'rejected',
-                  venueApplication: { ...a.venueApplication, status: 'rejected', rejectReason: venueReason },
-                  budgetApplication: { ...a.budgetApplication, status: 'rejected', rejectReason: budgetReason },
+                  status: overallStatus,
+                  venueApplication: {
+                    ...a.venueApplication,
+                    status: venueResult,
+                    rejectReason: venueResult === 'rejected' ? venueReason : undefined,
+                  },
+                  budgetApplication: {
+                    ...a.budgetApplication,
+                    status: budgetResult,
+                    rejectReason: budgetResult === 'rejected' ? budgetReason : undefined,
+                  },
                 }
               : a
           ),
